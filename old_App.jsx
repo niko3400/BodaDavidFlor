@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Navigation, Pagination, Keyboard, Autoplay } from 'swiper/modules';
@@ -16,7 +16,7 @@ import './App.css';
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypkop9VIYGtMh8e_H89QrDwyHVKBiddy5KycB0dXUUtqzT1-CcoGBz2ZmIlgVu23Hk/exec';
 
-// Helper para evitar CORS usando JSONP (usado solo para listar galería)
+// Helper para evitar CORS usando JSONP (usado solo para listar galer├¡a)
 const fetchJSONP = (url) => {
   return new Promise((resolve, reject) => {
     const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
@@ -32,7 +32,7 @@ const fetchJSONP = (url) => {
     script.onerror = () => {
       delete window[callbackName];
       if (document.body.contains(script)) document.body.removeChild(script);
-      reject(new Error('Error de conexión con el servidor (CORS/Network)'));
+      reject(new Error('Error de conexi├│n con el servidor (CORS/Network)'));
     };
 
     document.body.appendChild(script);
@@ -66,7 +66,7 @@ const getResumableUrl = async (filename, mimeType) => {
     const data = await resp.json();
     if (data.location) return data.location;
   } catch (e) {
-    console.log('Fetch directo falló, intentando vía JSONP...', e);
+    console.log('Fetch directo fall├│, intentando v├¡a JSONP...', e);
   }
 
   const data = await fetchJSONP(url);
@@ -75,31 +75,55 @@ const getResumableUrl = async (filename, mimeType) => {
   throw new Error('No se pudo obtener la URL de subida');
 };
 
+// Genera una "huella" ├║nica del archivo basada en metadata
+const getFileFingerprint = (file) => {
+  return `${file.name}|${file.size}|${file.lastModified}|${file.type}`;
+};
+
+// Genera nombre de archivo con prefijo del uploader
+const buildUploadName = (uploaderName, originalName) => {
+  const clean = uploaderName.trim().replace(/\s+/g, '_');
+  const now = new Date();
+  const ts = now.getFullYear().toString() +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0') + '_' +
+    String(now.getHours()).padStart(2, '0') +
+    String(now.getMinutes()).padStart(2, '0') +
+    String(now.getSeconds()).padStart(2, '0');
+  const ext = originalName.includes('.') ? originalName.substring(originalName.lastIndexOf('.')) : '';
+  const rand = Math.random().toString(36).substr(2, 4);
+  return `${clean}_${ts}_${rand}${ext}`;
+};
+
 function Upload({ onUploadSuccess }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [uploaderName, setUploaderName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState('');
-  const [activeGame, setActiveGame] = useState(null); // 'snake' | 'flappy' | null
+  const [activeGame, setActiveGame] = useState(null);
+  const [uploaderName, setUploaderName] = useState('');
+  const [uploadedFingerprints, setUploadedFingerprints] = useState(new Set());
 
   const handleFileChange = (e) => {
-    if (!uploaderName.trim()) {
-      setMessage('Por favor, ingresá tu nombre antes de elegir archivos.');
-      return;
-    }
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    const newFiles = [];
-    files.forEach(file => {
-      // Fingerprint for deduplication
-      const fingerprint = `${file.name}-${file.size}-${file.lastModified}`;
-      const isDuplicate = selectedFiles.some(f => f.fingerprint === fingerprint);
+    // Detectar duplicados por metadata
+    const existingFingerprints = new Set([
+      ...uploadedFingerprints,
+      ...selectedFiles.map(f => getFileFingerprint(f.file))
+    ]);
 
-      if (!isDuplicate) {
+    let duplicateCount = 0;
+    const newFiles = [];
+
+    files.forEach(file => {
+      const fp = getFileFingerprint(file);
+      if (existingFingerprints.has(fp)) {
+        duplicateCount++;
+      } else {
+        existingFingerprints.add(fp);
         newFiles.push({
           id: Math.random().toString(36).substr(2, 9),
-          fingerprint,
           file: file,
           name: file.name,
           progress: 0,
@@ -110,11 +134,15 @@ function Upload({ onUploadSuccess }) {
       }
     });
 
-    if (newFiles.length < files.length) {
-      setMessage('Algunos archivos ya estaban en la lista.');
+    if (duplicateCount > 0) {
+      setMessage(`${duplicateCount} archivo(s) duplicado(s) omitido(s)`);
+    } else {
+      setMessage('');
     }
 
-    setSelectedFiles(prev => [...prev, ...newFiles]);
+    if (newFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+    }
   };
 
   const uploadFileBase64 = async (fileObj) => {
@@ -124,12 +152,9 @@ function Upload({ onUploadSuccess }) {
       const base64Data = await readFileAsBase64(fileObj.file);
       updateFileStatus(fileObj.id, { progress: 30, status: 'uploading' });
 
-      const ext = fileObj.name.split('.').pop();
-      const safeName = uploaderName.trim().replace(/[^a-z0-9]/gi, '_');
-      const finalName = `${safeName}_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
-
+      const uploadName = buildUploadName(uploaderName, fileObj.name);
       const payload = JSON.stringify({
-        filename: finalName,
+        filename: uploadName,
         type: fileObj.file.type,
         file: base64Data
       });
@@ -144,6 +169,7 @@ function Upload({ onUploadSuccess }) {
       });
 
       updateFileStatus(fileObj.id, { progress: 100, status: 'success' });
+      setUploadedFingerprints(prev => new Set([...prev, getFileFingerprint(fileObj.file)]));
       const localUrl = URL.createObjectURL(fileObj.file);
       onUploadSuccess({
         id: Date.now() + Math.random(),
@@ -161,11 +187,8 @@ function Upload({ onUploadSuccess }) {
     try {
       updateFileStatus(fileObj.id, { status: 'preparing', progress: 0 });
 
-      const ext = fileObj.name.split('.').pop();
-      const safeName = uploaderName.trim().replace(/[^a-z0-9]/gi, '_');
-      const finalName = `${safeName}_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
-
-      const location = await getResumableUrl(finalName, fileObj.file.type);
+      const uploadName = buildUploadName(uploaderName, fileObj.name);
+      const location = await getResumableUrl(uploadName, fileObj.file.type);
 
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -181,6 +204,7 @@ function Upload({ onUploadSuccess }) {
         xhr.onload = () => {
           if (xhr.status === 200 || xhr.status === 201) {
             updateFileStatus(fileObj.id, { progress: 100, status: 'success' });
+            setUploadedFingerprints(prev => new Set([...prev, getFileFingerprint(fileObj.file)]));
             const localUrl = URL.createObjectURL(fileObj.file);
             onUploadSuccess({
               id: Date.now() + Math.random(),
@@ -223,12 +247,8 @@ function Upload({ onUploadSuccess }) {
 
   const startUploads = async () => {
     if (isUploading) return;
-    if (!uploaderName.trim()) {
-      setMessage('Por favor, ingresá tu nombre antes de subir.');
-      return;
-    }
     setIsUploading(true);
-    setMessage('Subiendo recuerdos... ¡Jugá mientras esperás! 🎮');
+    setMessage('Subiendo recuerdos... ┬íJug├í mientras esper├ís! ­ƒÄ«');
 
     for (const fileObj of selectedFiles) {
       if (fileObj.status === 'pending' || fileObj.status === 'error') {
@@ -243,11 +263,11 @@ function Upload({ onUploadSuccess }) {
     setIsUploading(false);
     const hasErrors = selectedFiles.some(f => f.status === 'error');
     if (!hasErrors) {
-      setMessage('¡Todo subido con éxito! 🎉');
+      setMessage('┬íTodo subido con ├®xito! ­ƒÄë');
       setActiveGame(null);
       setTimeout(() => setSelectedFiles([]), 5000);
     } else {
-      setMessage('Algunos archivos fallaron. Reintentá.');
+      setMessage('Algunos archivos fallaron. Reintent├í.');
     }
   };
 
@@ -263,30 +283,34 @@ function Upload({ onUploadSuccess }) {
       className="hero"
     >
       <h1>Nuestro Civil</h1>
-      <p>Compartí tus fotos y videos</p>
+      <p>Compart├¡ tus fotos y videos</p>
 
       <div className="upload-container glass">
-        <div className="name-input-container">
-          <label className="name-label">¿Quién sos?</label>
+        {/* Nombre obligatorio */}
+        <div className="name-input-group">
+          <label htmlFor="uploader-name" className="name-label">Tu nombre</label>
           <input
             type="text"
+            id="uploader-name"
             className="name-input"
-            placeholder="Tu nombre..."
+            placeholder="Ej: Mar├¡a L├│pez"
             value={uploaderName}
             onChange={(e) => setUploaderName(e.target.value)}
             disabled={isUploading}
+            maxLength={40}
+            autoComplete="name"
           />
+          {!uploaderName.trim() && selectedFiles.length > 0 && (
+            <p className="name-warning">ÔÜá Ingres├í tu nombre para poder subir</p>
+          )}
         </div>
 
-        <div
-          className={`upload-zone ${!uploaderName.trim() ? 'disabled' : ''}`}
-          onClick={() => !isUploading && uploaderName.trim() && document.getElementById('photo-input').click()}
-        >
+        <div className="upload-zone" onClick={() => !isUploading && document.getElementById('photo-input').click()}>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#6b7c5e' }}>
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            <p style={{ marginTop: '1rem' }}>Toca para elegir de tu galería</p>
+            <p style={{ marginTop: '1rem' }}>Toca para elegir de tu galer├¡a</p>
           </motion.div>
           <input
             type="file"
@@ -313,7 +337,7 @@ function Upload({ onUploadSuccess }) {
                   <div className="file-info">
                     <span className="file-name">{f.name}</span>
                     <span className={`file-status ${f.status}`}>
-                      {f.status === 'success' ? '✓' : f.status === 'error' ? '!' : `${f.progress}%`}
+                      {f.status === 'success' ? 'Ô£ô' : f.status === 'error' ? '!' : `${f.progress}%`}
                     </span>
                   </div>
                   <div className="progress-bar-bg">
@@ -324,7 +348,7 @@ function Upload({ onUploadSuccess }) {
                     />
                   </div>
                   {!isUploading && (f.status === 'pending' || f.status === 'error') && (
-                    <button className="remove-btn" onClick={() => removeFile(f.id)}>×</button>
+                    <button className="remove-btn" onClick={() => removeFile(f.id)}>├ù</button>
                   )}
                 </motion.div>
               ))}
@@ -336,9 +360,9 @@ function Upload({ onUploadSuccess }) {
           <button
             className="upload-btn"
             onClick={startUploads}
-            disabled={isUploading || selectedFiles.length === 0 || !uploaderName.trim()}
+            disabled={isUploading || !uploaderName.trim()}
           >
-            {isUploading ? 'Subiendo...' : 'Subir Recuerdos'}
+            {isUploading ? 'Subiendo...' : !uploaderName.trim() ? 'Ingres├í tu nombre primero' : `Subir ${selectedFiles.length} archivos`}
           </button>
         )}
 
@@ -361,7 +385,7 @@ function Upload({ onUploadSuccess }) {
             animate={{ opacity: 1, y: 0 }}
             className="games-picker"
           >
-            <p className="games-title">🎮 ¡Jugá mientras esperás!</p>
+            <p className="games-title">­ƒÄ« ┬íJug├í mientras esper├ís!</p>
             <div className="games-grid">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -369,7 +393,7 @@ function Upload({ onUploadSuccess }) {
                 className="game-pick-btn snake-btn"
                 onClick={() => setActiveGame('snake')}
               >
-                <span className="game-pick-emoji">🐍</span>
+                <span className="game-pick-emoji">­ƒÉì</span>
                 <span className="game-pick-name">Culebrita Nupcial</span>
               </motion.button>
               <motion.button
@@ -378,7 +402,7 @@ function Upload({ onUploadSuccess }) {
                 className="game-pick-btn flappy-btn"
                 onClick={() => setActiveGame('flappy')}
               >
-                <span className="game-pick-emoji">🕊️</span>
+                <span className="game-pick-emoji">­ƒòè´©Å</span>
                 <span className="game-pick-name">Paloma Voladora</span>
               </motion.button>
             </div>
@@ -436,7 +460,7 @@ function Gallery() {
       className="gallery-section"
     >
       <div className="gallery-header">
-        <h1>Galería de Recuerdos</h1>
+        <h1>Galer├¡a de Recuerdos</h1>
         <p>Todos los momentos compartidos</p>
       </div>
 
@@ -482,7 +506,7 @@ function Gallery() {
                         <img src={item.url} alt={item.name} className="slide-media" loading="lazy" />
                       )}
                       <div className="slide-overlay">
-                        {item.type === 'video' && <div className="play-badge">▶</div>}
+                        {item.type === 'video' && <div className="play-badge">ÔûÂ</div>}
                         <a href={item.downloadUrl} target="_blank" rel="noopener noreferrer" className="download-link"
                           onClick={(e) => e.stopPropagation()}>
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -497,8 +521,8 @@ function Gallery() {
               </Swiper>
             ) : (
               <div className="empty-gallery">
-                <span className="empty-emoji">📷</span>
-                <p>Aún no hay recuerdos. ¡Sé el primero en subir uno!</p>
+                <span className="empty-emoji">­ƒôÀ</span>
+                <p>A├║n no hay recuerdos. ┬íS├® el primero en subir uno!</p>
               </div>
             )}
           </div>
@@ -520,7 +544,7 @@ function Gallery() {
                   exit={{ scale: 0.8 }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button className="lightbox-close" onClick={() => setSelectedItem(null)}>✕</button>
+                  <button className="lightbox-close" onClick={() => setSelectedItem(null)}>Ô£ò</button>
                   {selectedItem.type === 'video' ? (
                     <video src={selectedItem.url} controls playsInline autoPlay className="lightbox-media" />
                   ) : (
@@ -544,12 +568,12 @@ function App() {
   };
 
   return (
-    <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+    <Router future={{ v7_relativeSplatPath: true }}>
       <nav className="navbar glass">
         <Link to="/" className="navbar-brand">Flor & <span className="brand-initial">D</span>avid</Link>
         <div className="nav-links">
           <Link to="/" className="nav-link">Subir</Link>
-          <Link to="/galeria" className="nav-link">Galería</Link>
+          <Link to="/galeria" className="nav-link">Galer├¡a</Link>
         </div>
       </nav>
 
@@ -564,16 +588,16 @@ function App() {
                     initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                     className="recent-uploads"
                   >
-                    <h2>Recién subidos</h2>
+                    <h2>Reci├®n subidos</h2>
                     <div className="thumbnails-grid">
                       {recentItems.map(item => (
                         <div key={item.id} className="thumbnail-container">
                           {item.type === 'video' ? (
                             <div className="video-thumb">
-                              <video src={item.url} muted /><div className="play-icon">▶</div>
+                              <video src={item.url} muted /><div className="play-icon">ÔûÂ</div>
                             </div>
                           ) : (
-                            <img src={item.url} alt="Recién subido" />
+                            <img src={item.url} alt="Reci├®n subido" />
                           )}
                         </div>
                       ))}
