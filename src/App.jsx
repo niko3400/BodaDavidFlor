@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { EffectCoverflow, Navigation, Pagination, Keyboard } from 'swiper/modules';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/effect-coverflow';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+
 import './App.css';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwC-tBZ4pGHVB6eHPO8PvAueb7rhLXVl2zjfnQMWrlLvWG-9YnYas-P073ldNtrJSLG/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx1kz99Xl2xz_z7Yc_2EEnP8BQENe5koKpP80tdWGUUZkO0FYeK9p3BnMZ-irJ0c8dt/exec';
 
 function Upload({ onUploadSuccess }) {
   const [file, setFile] = useState(null);
@@ -42,7 +52,11 @@ function Upload({ onUploadSuccess }) {
           })
         });
 
-        onUploadSuccess(reader.result);
+        onUploadSuccess({
+          id: Date.now(),
+          url: reader.result
+        });
+
         setUploading(false);
         setFile(null);
         setMessage('¡Foto subida con éxito! Gracias por compartir.');
@@ -55,11 +69,15 @@ function Upload({ onUploadSuccess }) {
   };
 
   return (
-    <section className="hero">
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="hero"
+    >
       <h1>Nuestra Boda</h1>
       <p>Compartí la magia de este día con nosotros</p>
 
-      <div className="upload-zone" onClick={() => document.getElementById('photo-input').click()}>
+      <div className="upload-zone glass" onClick={() => document.getElementById('photo-input').click()}>
         <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#D4AF37' }}>
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
           <circle cx="8.5" cy="8.5" r="1.5" />
@@ -91,17 +109,24 @@ function Upload({ onUploadSuccess }) {
           {uploading ? 'Subiendo...' : 'Subir Foto'}
         </button>
 
-        {message && (
-          <p style={{
-            marginTop: '1rem',
-            color: message.includes('error') ? '#e74c3c' : '#27ae60',
-            fontSize: '0.9rem'
-          }}>
-            {message}
-          </p>
-        )}
+        <AnimatePresence>
+          {message && (
+            <motion.p
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              style={{
+                marginTop: '1rem',
+                color: message.includes('error') ? '#e74c3c' : '#27ae60',
+                fontSize: '0.9rem'
+              }}
+            >
+              {message}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
@@ -126,40 +151,77 @@ function Gallery() {
   };
 
   return (
-    <section className="gallery-section hero">
+    <motion.section
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="gallery-section hero"
+    >
       <h1>Galería de Fotos</h1>
       <p>Todos los momentos compartidos</p>
 
       {loading ? (
-        <p>Cargando galería...</p>
+        <div className="loader-container">
+          <div className="loader"></div>
+          <p>Buscando recuerdos...</p>
+        </div>
       ) : (
-        <div className="thumbnails-grid full-gallery">
-          {photos.map(photo => (
-            <div key={photo.id} className="thumbnail-container">
-              <img src={photo.thumbnail} alt={photo.name} loading="lazy" />
-            </div>
-          ))}
-          {photos.length === 0 && <p>Aún no hay fotos en la galería. ¡Sé el primero en subir una!</p>}
+        <div className="carousel-container glass">
+          {photos.length > 0 ? (
+            <Swiper
+              effect={'coverflow'}
+              grabCursor={true}
+              centeredSlides={true}
+              slidesPerView={'auto'}
+              coverflowEffect={{
+                rotate: 50,
+                stretch: 0,
+                depth: 100,
+                modifier: 1,
+                slideShadows: true,
+              }}
+              pagination={{ clickable: true }}
+              navigation={true}
+              keyboard={true}
+              modules={[EffectCoverflow, Pagination, Navigation, Keyboard]}
+              className="mySwiper"
+            >
+              {photos.map(photo => (
+                <SwiperSlide key={photo.id}>
+                  <div className="slide-content">
+                    <img src={photo.url} alt={photo.name} />
+                    <div className="slide-overlay glass">
+                      <a href={photo.downloadUrl} target="_blank" rel="noopener noreferrer" className="download-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Descargar alta resolución
+                      </a>
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          ) : (
+            <p className="empty-gallery">Aún no hay fotos en la galería. ¡Sé el primero en subir una!</p>
+          )}
         </div>
       )}
-    </section>
+    </motion.section>
   );
 }
 
 function App() {
   const [recentPhotos, setRecentPhotos] = useState([]);
 
-  const handleUploadSuccess = (url) => {
-    const newPhoto = {
-      id: Date.now(),
-      url: url
-    };
-    setRecentPhotos(prev => [newPhoto, ...prev].slice(0, 3));
+  const handleUploadSuccess = (photo) => {
+    setRecentPhotos(prev => [photo, ...prev].slice(0, 3));
   };
 
   return (
     <Router>
-      <nav className="navbar">
+      <nav className="navbar glass">
         <Link to="/" className="navbar-brand">David & Flor</Link>
         <div className="nav-links">
           <Link to="/" className="nav-link">Subir</Link>
@@ -172,18 +234,24 @@ function App() {
           <Route path="/" element={
             <>
               <Upload onUploadSuccess={handleUploadSuccess} />
-              {recentPhotos.length > 0 && (
-                <div className="recent-uploads">
-                  <h2>Recién subidas</h2>
-                  <div className="thumbnails-grid">
-                    {recentPhotos.map(photo => (
-                      <div key={photo.id} className="thumbnail-container">
-                        <img src={photo.url} alt="Recién subida" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <AnimatePresence>
+                {recentPhotos.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="recent-uploads"
+                  >
+                    <h2>Recién subidas</h2>
+                    <div className="thumbnails-grid">
+                      {recentPhotos.map(photo => (
+                        <div key={photo.id} className="thumbnail-container">
+                          <img src={photo.url} alt="Recién subida" />
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </>
           } />
           <Route path="/galeria" element={<Gallery />} />
