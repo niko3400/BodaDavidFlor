@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, NavLink } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Navigation, Pagination, Keyboard, Autoplay } from 'swiper/modules';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
 import './App.css';
+import logo from './assets/FlorYDavidLogo.png';
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypkop9VIYGtMh8e_H89QrDwyHVKBiddy5KycB0dXUUtqzT1-CcoGBz2ZmIlgVu23Hk/exec';
 
@@ -546,12 +547,29 @@ function App() {
   return (
     <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <nav className="navbar glass">
-        <Link to="/" className="navbar-brand">Flor & <span className="brand-initial">D</span>avid</Link>
-        <div className="nav-links">
-          <Link to="/" className="nav-link">Subir</Link>
-          <Link to="/galeria" className="nav-link">Galería</Link>
-        </div>
+        <Link to="/" className="navbar-brand">
+          <img src={logo} alt="Flor & David" className="navbar-logo" />
+        </Link>
       </nav>
+
+      <div className="nav-links">
+        <NavLink to="/" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          Subir
+        </NavLink>
+        <NavLink to="/galeria" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          Galería
+        </NavLink>
+      </div>
 
       <main className="app-container">
         <Routes>

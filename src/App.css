@@ -14,12 +14,14 @@
   --border-soft: rgba(180, 165, 140, 0.25);
   --shadow-warm: 0 8px 30px rgba(90, 81, 69, 0.08);
   --glass-bg: rgba(244, 239, 230, 0.65);
+  --accent-mustard: #d4a34d;
+  --accent-mustard-dim: rgba(212, 163, 77, 0.1);
 
   /* Fonts matching the invitation */
-  --font-script: 'Great Vibes', cursive;
-  /* Brittany equivalent */
-  --font-initial: 'Pinyon Script', cursive;
-  /* White Star equivalent */
+  --font-script: 'Trocchi', serif;
+  /* Trocchi (exact match) */
+  --font-initial: 'Trocchi', serif;
+  /* Trocchi (exact match) */
   --font-body: 'Trocchi', serif;
   /* Trocchi (exact match) */
 }
@@ -65,40 +67,82 @@ body::before {
 /* =================== */
 .navbar {
   width: 100%;
-  padding: 1.2rem 2rem;
+  padding: 1.5rem 2.5rem;
   position: sticky;
   top: 0;
   z-index: 1000;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(244, 239, 230, 0.85);
+  background: rgba(244, 239, 230, 0.9);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .navbar-brand {
-  font-family: var(--font-script);
-  font-size: 2rem;
-  color: var(--text-dark);
+  display: flex;
+  align-items: center;
   text-decoration: none;
-  font-weight: 400;
-  letter-spacing: 0.5px;
 }
 
-.brand-initial {
-  font-family: var(--font-initial);
-  font-size: 2.3rem;
+.navbar-logo {
+  height: 65px;
+  width: auto;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.navbar-logo:hover {
+  transform: scale(1.05);
+}
+
+.nav-links {
+  display: flex;
+  position: fixed;
+  top: 0;
+  right: 2.5rem;
+  height: 97px;
+  /* Matches navbar height (1.5rem * 2 + 65px logo + padding) approx */
+  align-items: center;
+  z-index: 1001;
+  gap: 2.5rem;
 }
 
 .nav-link {
   text-decoration: none;
-  color: var(--text-warm);
+  color: var(--text-muted);
   font-family: var(--font-body);
-  font-size: 0.85rem;
-  letter-spacing: 2.5px;
+  font-size: 0.75rem;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  margin-left: 2rem;
   transition: all 0.3s ease;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-link svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--text-muted);
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  color: var(--accent-mustard);
+  transform: translateY(-2px);
+}
+
+.nav-link:hover svg {
+  stroke: var(--accent-mustard);
+}
+
+.nav-link.active {
+  color: var(--accent-mustard);
+}
+
+.nav-link.active svg {
+  stroke: var(--accent-mustard);
 }
 
 .nav-link::after {
@@ -143,11 +187,13 @@ body::before {
 
 .hero h1 {
   font-family: var(--font-script);
-  font-size: 3.5rem;
-  color: var(--text-dark);
-  margin-bottom: 0.3rem;
+  font-size: 2.8rem;
+  color: var(--accent-mustard);
+  margin-bottom: 0.5rem;
   font-weight: 400;
   line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .hero p {
@@ -567,10 +613,12 @@ body::before {
 
 .gallery-header h1 {
   font-family: var(--font-script);
-  font-size: 3rem;
-  color: var(--text-dark);
-  margin-bottom: 0.2rem;
+  font-size: 2.4rem;
+  color: var(--accent-mustard);
+  margin-bottom: 0.4rem;
   font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
 }
 
 .gallery-header p {
@@ -898,32 +946,70 @@ body::before {
     height: 280px;
   }
 
-  .navbar-brand {
-    font-size: 1.6rem;
-  }
-
+  /* Mobile Bottom Navigation */
   .navbar {
-    padding: 1rem 1.2rem;
+    padding: 1rem 1.5rem;
+    justify-content: center;
   }
 
-  .games-grid {
-    grid-template-columns: 1fr;
-    max-width: 220px;
-    margin: 0 auto;
+  .nav-links {
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    left: 0;
+    right: 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    justify-content: space-around;
+    padding: 0.8rem 0;
+    z-index: 2000;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .nav-link {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+  }
+
+  .nav-link.active {
+    color: var(--accent-mustard);
+  }
+
+  .nav-link svg {
+    width: 20px;
+    height: 20px;
+    margin-bottom: 2px;
+    stroke: currentColor;
+  }
+
+  .nav-link::after {
+    display: none;
   }
 
   .app-container {
     padding: 1rem;
+    padding-bottom: 5rem;
+    /* Space for bottom nav */
   }
 
-  .swiper-button-next,
-  .swiper-button-prev {
-    display: none !important;
+  .navbar-logo {
+    height: 55px;
   }
 
-  .nav-link {
-    margin-left: 1rem;
-    font-size: 0.75rem;
-    letter-spacing: 2px;
+  .hero h1 {
+    font-size: 2.2rem;
+  }
+
+  .gallery-header h1 {
+    font-size: 2rem;
   }
 }
