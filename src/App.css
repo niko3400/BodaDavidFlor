@@ -53,7 +53,7 @@ h3 {
 /* Header / La Barra */
 .navbar {
   width: 100%;
-  padding: 1.5rem;
+  padding: 1rem 2rem;
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -62,17 +62,36 @@ h3 {
   top: 0;
   z-index: 100;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 .navbar-brand {
   font-family: var(--font-serif);
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   color: var(--primary-color);
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   text-transform: uppercase;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: var(--secondary-color);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: var(--primary-color);
 }
 
 /* Main Content */
@@ -209,4 +228,20 @@ h3 {
   .thumbnails-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+.full-gallery {
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 2rem;
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+@media (min-width: 600px) {
+  .full-gallery {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.gallery-section {
+  width: 100%;
 }
