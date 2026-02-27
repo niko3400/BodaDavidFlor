@@ -12,7 +12,7 @@ import 'swiper/css/pagination';
 
 import './App.css';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx1kz99Xl2xz_z7Yc_2EEnP8BQENe5koKpP80tdWGUUZkO0FYeK9p3BnMZ-irJ0c8dt/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_5FCdWsKulTpPwTbvKrMH5L3Jr9uwWT0b8UF6AazMCeuTyesLjXH_TPlA2DOfiusf/exec';
 
 function Upload({ onUploadSuccess }) {
   const [file, setFile] = useState(null);
@@ -21,19 +21,25 @@ function Upload({ onUploadSuccess }) {
 
   const handleFileChange = (e) => {
     if (e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      // Limite de seguridad ~50MB para Apps Script
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        setMessage('El archivo es muy pesado. Máximo 50MB.');
+        return;
+      }
+      setFile(selectedFile);
       setMessage('');
     }
   };
 
   const handleUpload = async () => {
     if (!file) {
-      setMessage('Por favor, seleccioná una foto primero.');
+      setMessage('Por favor, seleccioná una foto o video primero.');
       return;
     }
 
     setUploading(true);
-    setMessage('Subiendo foto...');
+    setMessage(`Subiendo ${file.type.includes('video') ? 'video' : 'foto'}...`);
 
     try {
       const reader = new FileReader();
@@ -54,17 +60,18 @@ function Upload({ onUploadSuccess }) {
 
         onUploadSuccess({
           id: Date.now(),
-          url: reader.result
+          url: reader.result,
+          type: file.type.includes('video') ? 'video' : 'image'
         });
 
         setUploading(false);
         setFile(null);
-        setMessage('¡Foto subida con éxito! Gracias por compartir.');
+        setMessage('¡Subido con éxito! Gracias por compartir.');
       };
     } catch (error) {
       console.error(error);
       setUploading(false);
-      setMessage('Hubo un error al subir la foto. Reintentá.');
+      setMessage('Hubo un error al subir. Reintentá.');
     }
   };
 
@@ -87,7 +94,7 @@ function Upload({ onUploadSuccess }) {
         <input
           type="file"
           id="photo-input"
-          accept="image/*"
+          accept="image/*,video/*"
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />
@@ -95,7 +102,7 @@ function Upload({ onUploadSuccess }) {
         {file ? (
           <p style={{ fontWeight: 'bold', color: '#D4AF37' }}>{file.name}</p>
         ) : (
-          <p>Sacá una foto o elegí una de tu galería</p>
+          <p>Elegí una foto o video de tu galería</p>
         )}
 
         <button
@@ -106,7 +113,7 @@ function Upload({ onUploadSuccess }) {
           }}
           disabled={uploading}
         >
-          {uploading ? 'Subiendo...' : 'Subir Foto'}
+          {uploading ? 'Subiendo...' : 'Cargar'}
         </button>
 
         <AnimatePresence>
@@ -117,7 +124,7 @@ function Upload({ onUploadSuccess }) {
               exit={{ opacity: 0, height: 0 }}
               style={{
                 marginTop: '1rem',
-                color: message.includes('error') ? '#e74c3c' : '#27ae60',
+                color: message.includes('error') || message.includes('pesado') ? '#e74c3c' : '#27ae60',
                 fontSize: '0.9rem'
               }}
             >
@@ -131,20 +138,20 @@ function Upload({ onUploadSuccess }) {
 }
 
 function Gallery() {
-  const [photos, setPhotos] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchPhotos();
+    fetchItems();
   }, []);
 
-  const fetchPhotos = async () => {
+  const fetchItems = async () => {
     try {
       const response = await fetch(SCRIPT_URL);
       const data = await response.json();
-      setPhotos(data);
+      setItems(data);
     } catch (error) {
-      console.error("Error fetching photos:", error);
+      console.error("Error fetching items:", error);
     } finally {
       setLoading(false);
     }
@@ -156,7 +163,7 @@ function Gallery() {
       animate={{ opacity: 1 }}
       className="gallery-section hero"
     >
-      <h1>Galería de Fotos</h1>
+      <h1>Galería de Fotos y Videos</h1>
       <p>Todos los momentos compartidos</p>
 
       {loading ? (
@@ -166,7 +173,7 @@ function Gallery() {
         </div>
       ) : (
         <div className="carousel-container glass">
-          {photos.length > 0 ? (
+          {items.length > 0 ? (
             <Swiper
               effect={'coverflow'}
               grabCursor={true}
@@ -185,18 +192,27 @@ function Gallery() {
               modules={[EffectCoverflow, Pagination, Navigation, Keyboard]}
               className="mySwiper"
             >
-              {photos.map(photo => (
-                <SwiperSlide key={photo.id}>
+              {items.map(item => (
+                <SwiperSlide key={item.id}>
                   <div className="slide-content">
-                    <img src={photo.url} alt={photo.name} />
+                    {item.type === 'video' ? (
+                      <video
+                        src={item.url}
+                        controls
+                        playsInline
+                        className="slide-video"
+                      />
+                    ) : (
+                      <img src={item.url} alt={item.name} />
+                    )}
                     <div className="slide-overlay glass">
-                      <a href={photo.downloadUrl} target="_blank" rel="noopener noreferrer" className="download-link">
+                      <a href={item.downloadUrl} target="_blank" rel="noopener noreferrer" className="download-link">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4" />
                           <polyline points="7 10 12 15 17 10" />
                           <line x1="12" y1="15" x2="12" y2="3" />
                         </svg>
-                        Descargar alta resolución
+                        Descargar original
                       </a>
                     </div>
                   </div>
@@ -204,7 +220,7 @@ function Gallery() {
               ))}
             </Swiper>
           ) : (
-            <p className="empty-gallery">Aún no hay fotos en la galería. ¡Sé el primero en subir una!</p>
+            <p className="empty-gallery">Aún no hay recuerdos en la galería. ¡Sé el primero en subir uno!</p>
           )}
         </div>
       )}
@@ -213,10 +229,10 @@ function Gallery() {
 }
 
 function App() {
-  const [recentPhotos, setRecentPhotos] = useState([]);
+  const [recentItems, setRecentItems] = useState([]);
 
-  const handleUploadSuccess = (photo) => {
-    setRecentPhotos(prev => [photo, ...prev].slice(0, 3));
+  const handleUploadSuccess = (item) => {
+    setRecentItems(prev => [item, ...prev].slice(0, 3));
   };
 
   return (
@@ -235,17 +251,24 @@ function App() {
             <>
               <Upload onUploadSuccess={handleUploadSuccess} />
               <AnimatePresence>
-                {recentPhotos.length > 0 && (
+                {recentItems.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="recent-uploads"
                   >
-                    <h2>Recién subidas</h2>
+                    <h2>Recién subidos</h2>
                     <div className="thumbnails-grid">
-                      {recentPhotos.map(photo => (
-                        <div key={photo.id} className="thumbnail-container">
-                          <img src={photo.url} alt="Recién subida" />
+                      {recentItems.map(item => (
+                        <div key={item.id} className="thumbnail-container">
+                          {item.type === 'video' ? (
+                            <div className="video-thumb">
+                              <video src={item.url} muted />
+                              <div className="play-icon">▶</div>
+                            </div>
+                          ) : (
+                            <img src={item.url} alt="Recién subido" />
+                          )}
                         </div>
                       ))}
                     </div>
