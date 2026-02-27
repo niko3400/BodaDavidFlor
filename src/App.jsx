@@ -5,6 +5,7 @@ function App() {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
+  const [recentPhotos, setRecentPhotos] = useState([]);
 
   const handleFileChange = (e) => {
     if (e.target.files[0]) {
@@ -45,6 +46,13 @@ function App() {
           })
         });
 
+        // Add to local recent photos for preview
+        const newPhoto = {
+          id: Date.now(),
+          url: reader.result // We use the local base64 for immediate feedback
+        };
+
+        setRecentPhotos(prev => [newPhoto, ...prev].slice(0, 9)); // Keep last 9
         setUploading(false);
         setFile(null);
         setMessage('¡Foto subida con éxito! Gracias por compartir.');
@@ -78,7 +86,6 @@ function App() {
               type="file"
               id="photo-input"
               accept="image/*"
-              capture="camera"
               style={{ display: 'none' }}
               onChange={handleFileChange}
             />
@@ -86,7 +93,7 @@ function App() {
             {file ? (
               <p style={{ fontWeight: 'bold', color: '#D4AF37' }}>{file.name}</p>
             ) : (
-              <p>Tocá acá para sacar una foto o elegir una de tu galería</p>
+              <p>Sacá una foto o elegí una de tu galería</p>
             )}
 
             <button
@@ -110,6 +117,19 @@ function App() {
               </p>
             )}
           </div>
+
+          {recentPhotos.length > 0 && (
+            <div className="recent-uploads">
+              <h2>Fotos compartidas</h2>
+              <div className="thumbnails-grid">
+                {recentPhotos.map(photo => (
+                  <div key={photo.id} className="thumbnail-container">
+                    <img src={photo.url} alt="Recién subida" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       </main>
     </>

@@ -1,9 +1,13 @@
 :root {
-  --primary-color: #D4AF37; /* Metallic Gold */
-  --secondary-color: #2C3E50; /* Deep Slate */
-  --bg-color: #F9F7F2; /* Cream/Off-white */
+  --primary-color: #D4AF37;
+  /* Metallic Gold */
+  --secondary-color: #2C3E50;
+  /* Deep Slate */
+  --bg-color: #F9F7F2;
+  /* Cream/Off-white */
   --text-color: #2C3E50;
-  --accent-color: #C5A028; /* Darker Gold for hover */
+  --accent-color: #C5A028;
+  /* Darker Gold for hover */
   --glass-bg: rgba(255, 255, 255, 0.7);
   --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
   --font-serif: 'Playfair Display', serif;
@@ -27,7 +31,9 @@ body {
   overflow-x: hidden;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: var(--font-serif);
   font-weight: 700;
 }
@@ -58,7 +64,7 @@ h1, h2, h3 {
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 .navbar-brand {
@@ -135,6 +141,49 @@ h1, h2, h3 {
   transform: translateY(0);
 }
 
+/* Recent Uploads Section */
+.recent-uploads {
+  margin-top: 4rem;
+  width: 100%;
+  text-align: left;
+  opacity: 0;
+  animation: fadeIn 1s ease-out 0.5s forwards;
+}
+
+.recent-uploads h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--secondary-color);
+  text-align: center;
+}
+
+.thumbnails-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 10px;
+}
+
+.thumbnail-container {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  background: white;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.thumbnail-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.thumbnail-container:hover img {
+  transform: scale(1.1);
+}
+
 /* Animations */
 @keyframes fadeIn {
   to {
@@ -148,12 +197,16 @@ h1, h2, h3 {
   .hero h1 {
     font-size: 2rem;
   }
-  
+
   .upload-zone {
     padding: 2rem;
   }
-  
+
   .navbar-brand {
     font-size: 1.4rem;
+  }
+
+  .thumbnails-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
